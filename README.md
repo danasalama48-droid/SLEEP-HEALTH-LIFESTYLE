@@ -6,7 +6,7 @@ An interactive data story exploring sleep health patterns across 374 adults — 
 
 ## What this is
 
-A single-page, self-contained HTML visualization (Chart.js) that walks through five findings in the dataset:
+A single-page, self-contained HTML visualization (Chart.js) with a cool-toned, clinical data-report look. It walks through five findings in the dataset:
 
 1. **The stress line** — stress level is the strongest predictor of sleep quality in the data (r ≈ −0.81).
 2. **The occupation gap** — average sleep duration and stress vary sharply by job (engineers sleep ~1.6 hrs more than salespeople).
@@ -39,7 +39,7 @@ A single-page, self-contained HTML visualization (Chart.js) that walks through f
 ```
 .
 ├── README.md
-├── sleep_story.html          # the visual story (open directly in a browser)
+├── index.html                # the visual story (served live via GitHub Pages)
 ├── schema.sql                # SQL to create a normalized database for this data
 └── Sleep_health_and_lifestyle_dataset.csv   # source data (add your own copy)
 ```
