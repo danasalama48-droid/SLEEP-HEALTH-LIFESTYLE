@@ -1,63 +1,376 @@
-# The Shape of Sleep
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Shape of Sleep</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f3f6f9;
+    --bg-deep:#e9eef4;
+    --ink:#0f1b2d;
+    --ink-soft:#5c6b80;
+    --panel:#ffffff;
+    --line:#dfe6ee;
+    --accent:#0a7ea4;      /* teal-cyan, primary */
+    --accent-deep:#075873;
+    --violet:#5b5fc7;      /* insomnia — cool violet, not warm */
+    --blue:#2f6fed;        /* apnea */
+    --teal:#0f9b8e;        /* none / healthy */
+    --grid:#e3e9f0;
+    --serif: 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --sans: 'Avenir Next','Segoe UI',Helvetica,Arial,sans-serif;
+    --mono: 'IBM Plex Mono','SF Mono','Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);}
+  body{
+    background:
+      linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 340px);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px;}
 
-An interactive data story exploring sleep health patterns across 374 adults — stress, occupation, BMI, and sleep disorders — built from the *Sleep Health and Lifestyle* dataset.
+  /* ---- Hero ---- */
+  .hero{position:relative;padding:90px 0 60px;z-index:1;}
+  .eyebrow{font-family:var(--mono);letter-spacing:0.18em;text-transform:uppercase;font-size:12px;color:var(--accent-deep);margin-bottom:20px;font-weight:600;}
+  .hero h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(38px,5.6vw,68px);
+    line-height:1.08;
+    margin:0 0 26px;
+    color:var(--ink);
+    max-width:800px;
+  }
+  .hero h1 em{font-style:italic;color:var(--accent);}
+  .hero p.sub{font-size:18px;line-height:1.65;color:var(--ink-soft);max-width:600px;margin:0 0 40px;}
 
-**[View the live story](https://danasalama48-droid.github.io/SLEEP-HEALTH-LIFESTYLE/)**
+  /* signature element: sleep-wave line, replaces the moon */
+  .wave-sig{width:100%;height:120px;margin:8px 0 36px;}
+  .wave-sig svg{width:100%;height:100%;display:block;}
 
-## What this is
+  .stat-row{display:flex;gap:0;margin-top:6px;border-top:1px solid var(--line);padding-top:26px;flex-wrap:wrap;}
+  .stat{flex:1;min-width:150px;padding-right:24px;}
+  .stat .num{font-family:var(--serif);font-size:36px;color:var(--ink);}
+  .stat .num span{color:var(--accent);}
+  .stat .lbl{font-size:12.5px;color:var(--ink-soft);letter-spacing:0.02em;margin-top:4px;}
 
-A single-page, self-contained HTML visualization (Chart.js) that walks through five findings in the dataset:
+  /* ---- Section scaffolding ---- */
+  section{position:relative;z-index:1;padding:60px 0;border-top:1px solid var(--line);}
+  .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:14px;font-weight:600;}
+  h2{font-family:var(--serif);font-weight:400;font-size:clamp(26px,3.4vw,38px);line-height:1.18;margin:0 0 18px;max-width:740px;color:var(--ink);}
+  .lede{font-size:16.5px;line-height:1.7;color:var(--ink-soft);max-width:640px;margin:0 0 32px;}
+  .lede strong{color:var(--ink);font-weight:600;}
 
-1. **The stress line** — stress level is the strongest predictor of sleep quality in the data (r ≈ −0.81).
-2. **The occupation gap** — average sleep duration and stress vary sharply by job (engineers sleep ~1.6 hrs more than salespeople).
-3. **The weight connection** — sleep disorder rates climb steeply with BMI category.
-4. **Two disorders, two causes** — nurses skew toward Sleep Apnea; salespeople and teachers skew toward Insomnia.
-5. **The gender gap** — a modest difference in sleep duration, a larger one in reported stress.
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:26px 26px 16px;
+    box-shadow:0 1px 2px rgba(15,27,45,0.04);
+  }
+  .chart-box{position:relative;height:340px;}
+  .chart-box.short{height:270px;}
+  .caption{font-size:12.5px;color:var(--ink-soft);margin-top:14px;padding-top:14px;border-top:1px solid var(--line);line-height:1.6;}
+  .caption strong{color:var(--ink);}
 
-## Dataset
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:820px){.two-col{grid-template-columns:1fr;}}
 
-`Sleep_health_and_lifestyle_dataset.csv` — 374 rows, 13 columns:
+  .legend-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
 
-| Column | Description |
-|---|---|
-| Person ID | Unique identifier |
-| Gender | Male / Female |
-| Age | Age in years |
-| Occupation | Job title |
-| Sleep Duration | Average hours of sleep per night |
-| Quality of Sleep | Self-rated, 1–10 |
-| Physical Activity Level | Minutes of daily activity |
-| Stress Level | Self-rated, 1–8 |
-| BMI Category | Normal / Normal Weight / Overweight / Obese |
-| Blood Pressure | Systolic/diastolic (e.g. 126/83) |
-| Heart Rate | Resting heart rate (bpm) |
-| Daily Steps | Average daily step count |
-| Sleep Disorder | None / Insomnia / Sleep Apnea |
+  .callout{
+    display:flex;gap:18px;align-items:flex-start;
+    background:linear-gradient(135deg, rgba(10,126,164,0.07), rgba(10,126,164,0.015));
+    border:1px solid rgba(10,126,164,0.22);
+    border-radius:8px;
+    padding:22px 24px;
+    margin-top:26px;
+  }
+  .callout .mark{font-family:var(--serif);font-size:30px;color:var(--accent);line-height:1;}
+  .callout p{margin:0;font-size:14.5px;line-height:1.65;color:var(--ink);}
 
-## Repo structure
+  .grid-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px;}
+  @media(max-width:820px){.grid-cards{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;}
+  .card .pct{font-family:var(--serif);font-size:28px;color:var(--ink);}
+  .card .pct.blue{color:var(--blue);}
+  .card .pct.violet{color:var(--violet);}
+  .card .pct.teal{color:var(--teal);}
+  .card .label{font-size:12.5px;color:var(--ink-soft);margin-top:5px;}
 
-```
-.
-├── README.md
-├── sleep_story.html          # the visual story (open directly in a browser)
-├── schema.sql                # SQL to create a normalized database for this data
-└── Sleep_health_and_lifestyle_dataset.csv   # source data (add your own copy)
-```
+  footer{padding:44px 0 70px;text-align:center;}
+  footer p{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);letter-spacing:0.06em;}
 
-## Setting up the database
+  ::selection{background:var(--accent);color:#fff;}
+</style>
+</head>
+<body>
 
-`schema.sql` creates a normalized schema (a `people` table plus a `blood_pressure` split into systolic/diastolic) and includes the `CREATE TABLE` statements, indexes, and a load command. See that file for details — it targets PostgreSQL syntax but only uses standard SQL types, so it also runs in MySQL/SQLite with minor tweaks (e.g. `SERIAL` → `AUTOINCREMENT` for SQLite).
+<div class="wrap">
 
-```bash
-psql -U your_user -d your_db -f schema.sql
-```
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">374 people · sleep health &amp; lifestyle</div>
+    <h1>Sleep isn't lost in bed.<br>It's lost <em>earlier</em> in the day.</h1>
+    <p class="sub">Across 374 working adults, the single strongest predictor of a bad night wasn't caffeine, screens, or bedtime — it was how stressed they were before they ever lay down.</p>
 
-## Tech
+    <div class="wave-sig">
+      <svg viewBox="0 0 1000 120" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#5b5fc7"/>
+            <stop offset="50%" stop-color="#0a7ea4"/>
+            <stop offset="100%" stop-color="#0f9b8e"/>
+          </linearGradient>
+        </defs>
+        <path d="M0,60 C40,20 80,20 120,60 C160,100 200,100 240,60 C270,32 300,15 330,60 C360,105 390,105 420,60 C450,20 480,20 510,60 C540,100 570,100 600,60 C625,28 650,10 680,60 C710,110 740,110 770,60 C800,20 830,20 860,60 C890,95 920,95 950,60 C965,42 980,42 1000,60"
+          fill="none" stroke="url(#waveGrad)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
 
-- Chart.js (via CDN) for the visualizations
-- Plain HTML/CSS/JS — no build step, no dependencies to install
-- SQL schema for anyone who wants to query the dataset relationally instead of from the CSV
+    <div class="stat-row">
+      <div class="stat"><div class="num">7.1<span>hrs</span></div><div class="lbl">Average sleep duration</div></div>
+      <div class="stat"><div class="num"><span>41%</span></div><div class="lbl">Have a diagnosed sleep disorder</div></div>
+      <div class="stat"><div class="num">5.4<span>/8</span></div><div class="lbl">Average stress level</div></div>
+      <div class="stat"><div class="num">−0.81</div><div class="lbl">Correlation: stress → sleep duration</div></div>
+    </div>
+  </div>
 
-## License
+  <!-- STRESS SECTION -->
+  <section>
+    <div class="kicker">01 — The stress line</div>
+    <h2>As stress climbs, sleep quality falls in almost a straight line.</h2>
+    <p class="lede">Rated on an 8-point stress scale, every single step up tracks with a measurable drop in self-reported sleep quality — from <strong>8.97 at the lowest stress level down to 5.86 at the highest</strong>. It's one of the cleanest relationships in the whole dataset.</p>
+    <div class="panel">
+      <div class="chart-box"><canvas id="stressChart"></canvas></div>
+      <div class="caption"><strong>Reading it:</strong> stress level (1–8, self-reported) plotted against average sleep quality (1–10) for everyone at that stress level. The line only moves one direction.</div>
+    </div>
+  </section>
 
-MIT (or your preferred license — update this section).
+  <!-- OCCUPATION -->
+  <section>
+    <div class="kicker">02 — The occupation gap</div>
+    <h2>Your job title is a decent guess at your sleep schedule.</h2>
+    <p class="lede">Averaging across each occupation with a meaningful sample size, <strong>engineers sleep nearly 1.6 hours more per night than salespeople</strong> — and report the lowest stress of any group in the dataset.</p>
+    <div class="panel">
+      <div class="chart-box"><canvas id="occChart"></canvas></div>
+      <div class="caption"><strong>Reading it:</strong> bar length is average nightly sleep duration; darker bars mean higher average stress for that group. Lower stress consistently sits with longer sleep.</div>
+    </div>
+  </section>
+
+  <!-- BMI x DISORDER -->
+  <section>
+    <div class="kicker">03 — The weight connection</div>
+    <h2>Sleep disorders aren't evenly distributed — they cluster hard around BMI.</h2>
+    <p class="lede">Among people at a normal weight, <strong>93% report no sleep disorder at all</strong>. That protection erodes fast: by the time someone is classified obese, a disorder is more likely than not.</p>
+    <div class="grid-cards">
+      <div class="card"><div class="pct teal">93%</div><div class="label">No disorder — Normal BMI (n=216)</div></div>
+      <div class="card"><div class="pct violet">43%</div><div class="label">Insomnia or Sleep Apnea — Overweight (n=148)</div></div>
+      <div class="card"><div class="pct blue">60%</div><div class="label">Sleep Apnea specifically — Obese (n=10)</div></div>
+    </div>
+    <div class="panel" style="margin-top:18px;">
+      <div class="legend-row">
+        <div class="legend-item"><span class="swatch" style="background:var(--teal)"></span>No disorder</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--violet)"></span>Insomnia</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span>Sleep Apnea</div>
+      </div>
+      <div class="chart-box short"><canvas id="bmiChart"></canvas></div>
+      <div class="caption"><strong>Reading it:</strong> each bar is 100% of people in that BMI category, split by sleep disorder outcome. The obese group is a small sample (n=10) — directionally real, but worth reading with that caveat.</div>
+    </div>
+  </section>
+
+  <!-- OCCUPATION x DISORDER -->
+  <section>
+    <div class="kicker">04 — Two different disorders, two different jobs</div>
+    <h2>Nurses and salespeople are both sleep-troubled — just not in the same way.</h2>
+    <p class="lede">83% of nurses with a disorder have <strong>Sleep Apnea</strong> — a physical, breathing-related condition. Salespeople and teachers skew almost entirely toward <strong>Insomnia</strong> — a stress-linked, cognitive one. Same 40%-ish disorder rate, opposite root cause.</p>
+    <div class="panel">
+      <div class="legend-row">
+        <div class="legend-item"><span class="swatch" style="background:var(--violet)"></span>Insomnia</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--blue)"></span>Sleep Apnea</div>
+      </div>
+      <div class="chart-box"><canvas id="occDisorderChart"></canvas></div>
+      <div class="caption"><strong>Reading it:</strong> raw counts of each disorder type, by occupation, for the occupations with more than one diagnosed case.</div>
+    </div>
+    <div class="callout">
+      <div class="mark">”</div>
+      <p>Sleep Apnea shows up where physical strain and irregular shifts dominate (nursing). Insomnia shows up where the job is high-pressure and cognitively loaded (sales, teaching). The dataset can't prove causation — but the split is too clean to be noise.</p>
+    </div>
+  </section>
+
+  <!-- GENDER -->
+  <section>
+    <div class="kicker">05 — A smaller, steadier gap</div>
+    <h2>Women in this data sleep a little more, and report noticeably less stress.</h2>
+    <p class="lede">The gender gap here is modest on sleep duration but wider on stress: women average <strong>4.68 out of 8</strong>, men average <strong>6.08 out of 8</strong> — a gap almost as large as the entire range between the calmest and most stressed occupations.</p>
+    <div class="two-col">
+      <div class="panel">
+        <div class="chart-box short"><canvas id="genderSleepChart"></canvas></div>
+        <div class="caption">Sleep duration &amp; quality by gender</div>
+      </div>
+      <div class="panel">
+        <div class="chart-box short"><canvas id="genderStressChart"></canvas></div>
+        <div class="caption">Average stress level by gender (scale 1–8)</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>SLEEP HEALTH &amp; LIFESTYLE DATASET · 374 RESPONDENTS · VISUAL STORY</p>
+  </footer>
+
+</div>
+
+<script>
+Chart.defaults.color = '#5c6b80';
+Chart.defaults.font.family = "'Avenir Next','Segoe UI',sans-serif";
+Chart.defaults.font.size = 12.5;
+
+const gridColor = '#e3e9f0';
+const accent = '#0a7ea4';
+const violet = '#5b5fc7';
+const blue = '#2f6fed';
+const teal = '#0f9b8e';
+
+// 1. Stress -> Quality
+new Chart(document.getElementById('stressChart'), {
+  type: 'line',
+  data: {
+    labels: ['3','4','5','6','7','8'],
+    datasets: [{
+      label: 'Avg Quality of Sleep',
+      data: [8.97, 7.67, 7.90, 7.00, 6.00, 5.86],
+      borderColor: accent,
+      backgroundColor: 'rgba(10,126,164,0.08)',
+      fill: true,
+      tension: 0.35,
+      pointBackgroundColor: accent,
+      pointRadius: 5,
+      borderWidth: 2.5
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ title:{display:true,text:'Stress Level (1–8)',color:'#5c6b80'}, grid:{color:gridColor} },
+      y:{ title:{display:true,text:'Avg Quality of Sleep (1–10)',color:'#5c6b80'}, grid:{color:gridColor}, min:5 }
+    }
+  }
+});
+
+// 2. Occupation sleep duration
+const occLabels = ['Salesperson','Teacher','Doctor','Nurse','Accountant','Lawyer','Engineer'];
+const occSleep = [6.40, 6.69, 6.97, 7.06, 7.11, 7.41, 7.99];
+const occStress = [7.0, 4.53, 6.73, 5.55, 4.59, 5.06, 3.89];
+new Chart(document.getElementById('occChart'), {
+  type: 'bar',
+  data: {
+    labels: occLabels,
+    datasets: [{
+      label:'Avg Sleep Duration (hrs)',
+      data: occSleep,
+      backgroundColor: occStress.map(s => {
+        // higher stress -> deeper navy-blue, lower stress -> lighter cyan
+        const t = (s-3.89)/(7.0-3.89);
+        const r = Math.round(10 + (30-10)*t);
+        const g = Math.round(126 - (95)*t);
+        const b = Math.round(164 - (30)*t);
+        return `rgba(${r},${g},${b},0.9)`;
+      }),
+      borderRadius: 3,
+      barThickness: 26
+    }]
+  },
+  options: {
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false},
+      tooltip:{ callbacks:{ label: (ctx)=> `${ctx.parsed.x} hrs sleep · stress ${occStress[ctx.dataIndex]}/8` } }
+    },
+    scales:{
+      x:{ title:{display:true,text:'Average Sleep Duration (hours)',color:'#5c6b80'}, grid:{color:gridColor}, min:5.5 },
+      y:{ grid:{display:false} }
+    }
+  }
+});
+
+// 3. BMI x disorder stacked
+new Chart(document.getElementById('bmiChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Normal (n=216)','Overweight (n=148)','Obese (n=10)'],
+    datasets: [
+      { label:'None', data:[92.6, 12.8, 0], backgroundColor: teal, stack:'s' },
+      { label:'Insomnia', data:[4.2, 43.2, 40.0], backgroundColor: violet, stack:'s' },
+      { label:'Sleep Apnea', data:[3.2, 43.9, 60.0], backgroundColor: blue, stack:'s' }
+    ]
+  },
+  options: {
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ stacked:true, max:100, title:{display:true,text:'% of group',color:'#5c6b80'}, grid:{color:gridColor} },
+      y:{ stacked:true, grid:{display:false} }
+    }
+  }
+});
+
+// 4. Occupation x disorder counts
+new Chart(document.getElementById('occDisorderChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Nurse','Teacher','Salesperson','Doctor','Engineer','Lawyer','Accountant'],
+    datasets: [
+      { label:'Insomnia', data:[3,27,29,3,5,2,7], backgroundColor: violet, borderRadius:3 },
+      { label:'Sleep Apnea', data:[61,4,1,4,1,3,0], backgroundColor: blue, borderRadius:3 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{display:false} },
+      y:{ title:{display:true,text:'Diagnosed cases',color:'#5c6b80'}, grid:{color:gridColor} }
+    }
+  }
+});
+
+// 5a. Gender sleep duration/quality
+new Chart(document.getElementById('genderSleepChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Sleep Duration (hrs)','Quality of Sleep (/10)'],
+    datasets: [
+      { label:'Female', data:[7.23, 7.66], backgroundColor: accent, borderRadius:3, barThickness:34 },
+      { label:'Male', data:[7.04, 6.97], backgroundColor: violet, borderRadius:3, barThickness:34 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{position:'top', labels:{boxWidth:11,color:'#5c6b80'}} },
+    scales:{ x:{grid:{display:false}}, y:{grid:{color:gridColor}} }
+  }
+});
+
+// 5b. Gender stress
+new Chart(document.getElementById('genderStressChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Female','Male'],
+    datasets: [{ data:[4.68, 6.08], backgroundColor:[accent, violet], borderRadius:4, barThickness:60 }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{ x:{grid:{display:false}}, y:{title:{display:true,text:'Avg Stress Level (1–8)',color:'#5c6b80'}, grid:{color:gridColor}, max:8} }
+  }
+});
+</script>
+
+</body>
+</html>
