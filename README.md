@@ -2,7 +2,7 @@
 
 An interactive data story exploring sleep health patterns across 374 adults — stress, occupation, BMI, and sleep disorders — built from the *Sleep Health and Lifestyle* dataset.
 
-**[View the live story](./sleep_story.html)**
+**[View the live story](https://danasalama48-droid.github.io/SLEEP-HEALTH-LIFESTYLE/)**
 
 ## What this is
 
