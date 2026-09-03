@@ -58,6 +58,4 @@ psql -U your_user -d your_db -f schema.sql
 - Plain HTML/CSS/JS — no build step, no dependencies to install
 - SQL schema for anyone who wants to query the dataset relationally instead of from the CSV
 
-## License
 
-MIT (or your preferred license — update this section).
